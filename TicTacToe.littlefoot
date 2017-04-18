@@ -1,0 +1,199 @@
+/*
+<metadata description="A fun game of Tic Tac Toe for all the family. Press the Mode button to start a new game." target="All" tags="" >
+
+</metadata>
+*/
+
+//==============================================================================
+
+int tl, t, tr;
+int ml, m, mr;
+int bl, b, br;
+
+int currentTurn;
+
+int winner;
+
+void initialise()
+{
+    tl = 0;
+    t  = 0;
+    tr = 0;
+    ml = 0;
+    m  = 0;
+    mr = 0;
+    bl = 0;
+    b  = 0;
+    br = 0;
+    
+    currentTurn = 1;
+    winner = 0;
+}
+
+void repaint()
+{
+    clearDisplay();
+    
+    if (winner == 0)
+    {
+        drawGrid();
+        drawOrnaments();
+    }
+    else
+    {
+        drawWinner();
+    }   
+}
+
+void drawWinner()
+{
+    if (winner == 1)
+    {
+        int xColour = makeARGB(255, 0, 255, 0);
+        fillRect (xColour, 0, 0, 15, 15);        
+    }
+    else if (winner == 2)
+    {
+        int yColour = makeARGB(255, 0, 0, 255);
+        fillRect (yColour, 0, 0, 15, 15);        
+    }
+}
+
+void drawGrid()
+{
+    int white = makeARGB(255, 200, 200, 200);
+    
+    if (tl == 0) drawRect (white, 0,  0,  5, 5);
+    if (t  == 0) drawRect (white, 5,  0,  5, 5);
+    if (tr == 0) drawRect (white, 10, 0,  5, 5);
+    if (ml == 0) drawRect (white, 0,  5,  5, 5);
+    if (m  == 0) drawRect (white, 5,  5,  5, 5);
+    if (mr == 0) drawRect (white, 10, 5,  5, 5);
+    if (bl == 0) drawRect (white, 0,  10, 5, 5);
+    if (b  == 0) drawRect (white, 5,  10, 5, 5);
+    if (br == 0) drawRect (white, 10, 10, 5, 5);
+}
+
+void drawRect (int colour, int x, int y, int w, int h)
+{
+    fillRect (colour, x, y, 1, h);
+    fillRect (colour, x, y, w, 1);
+    
+    fillRect (colour, x + w - 1, y, 1, h);
+    fillRect (colour, x, y + h - 1, w, 1);
+}
+
+void drawOrnaments()
+{
+    evaluate (tl, 0,  0);
+    evaluate (t , 5,  0);
+    evaluate (tr, 10, 0);
+    
+    evaluate (ml, 0,  5);
+    evaluate (m,  5,  5);
+    evaluate (mr, 10, 5);
+    
+    evaluate (bl, 0,  10);
+    evaluate (b,  5,  10);
+    evaluate (br, 10, 10);
+}
+
+void evaluate (int value, int x, int y)
+{
+    if (value == 1)
+        drawX (x, y);
+    
+    if (value == 2)
+        drawO (x, y);
+}
+
+
+void drawX (int x, int y)
+{
+    int xColour = makeARGB(255, 0, 255, 0);
+    
+    fillRect (xColour, x,   y,   1, 1);
+    fillRect (xColour, x+1, y+1, 1, 1);
+    fillRect (xColour, x+2, y+2, 1, 1);
+    fillRect (xColour, x+3, y+3, 1, 1);
+    fillRect (xColour, x+4, y+4, 1, 1);
+    
+    fillRect (xColour, x+4, y,   1, 1);
+    fillRect (xColour, x+3, y+1, 1, 1);
+    fillRect (xColour, x+2, y+2, 1, 1);
+    fillRect (xColour, x+1, y+3, 1, 1);
+    fillRect (xColour, x,   y+4, 1, 1);
+}
+
+void drawO (int x, int y)
+{
+    int yColour = makeARGB(255, 0, 0, 255);
+    
+    fillRect (yColour, x,   y,   5, 1);
+    fillRect (yColour, x,   y+4, 5, 1);
+    fillRect (yColour, x,   y,   1, 5);
+    fillRect (yColour, x+4, y,   1, 5);
+}
+
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+    int xPos = int (x * 7.5);
+    int yPos = int (y * 7.5);
+    
+    int index = getIndex (xPos, yPos);
+    
+    if (setValueForIndex (index, currentTurn))
+    {
+        currentTurn = currentTurn == 1 ? 2 : 1;
+    }
+    
+    if (xHasWon()) winner = 1;
+    else if (oHasWon()) winner = 2;
+}
+
+int getIndex (int x, int y)
+{
+    int xInd = x / 5;
+    int yInd = y / 5;
+    
+    return yInd * 3 + xInd;
+}
+
+bool setValueForIndex (int index, int value)
+{   
+    if (index == 0) { tl = tl == 0 ? value : tl; return true; }
+    if (index == 1) { t  = t  == 0 ? value : t ; return true; }
+    if (index == 2) { tr = tr == 0 ? value : tr; return true; }
+    if (index == 3) { ml = ml == 0 ? value : ml; return true; }
+    if (index == 4) { m  = m  == 0 ? value : m ; return true; }
+    if (index == 5) { mr = mr == 0 ? value : mr; return true; }
+    if (index == 6) { bl = bl == 0 ? value : bl; return true; }
+    if (index == 7) { b  = b  == 0 ? value : b ; return true; }
+    if (index == 8) { br = br == 0 ? value : br; return true; }
+    
+    return false;
+}
+
+bool xHasWon() { return hasWon(1); }
+bool oHasWon() { return hasWon(2); }
+
+bool hasWon(int player)
+{
+    return 
+       (tl == player && t == player && tr == player) 
+    || (ml == player && m == player && mr == player) 
+    || (bl == player && b == player && br == player) 
+    
+    || (tl == player && ml == player && bl == player)
+    || (t  == player && m  == player && b == player)
+    || (tr == player && mr == player && br == player)
+    
+    || (tl == player && m == player && br == player)
+    || (tr == player && m == player && bl == player)
+}
+
+void handleButtonDown (int index)
+{
+    initialise();
+}
