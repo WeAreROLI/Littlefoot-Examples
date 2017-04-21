@@ -1,0 +1,232 @@
+/*
+<metadata description="Description not specified" target="All" tags="" >
+
+</metadata>
+*/
+
+//==============================================================================
+float xPosition;
+float yPosition;
+bool moveLeft;
+bool moveRight;
+bool moveUp;
+
+int red;
+int green;
+int yellow;
+int blue;
+int blue2;
+int black;
+
+float y;
+float sy;
+float speed;
+float speed2;
+float speedMV;
+float speedMV2;
+
+int star;
+
+void initialise()
+{
+    //set up variables here
+    xPosition = 8;
+    yPosition = 3;
+    moveLeft = true;
+    moveRight = false;
+    moveUp = true;
+    
+    red = makeARGB(255, 255, 0, 0);
+    green = makeARGB(250, 0, 255, 0);
+    yellow = makeARGB(255, 255, 255, 0);
+    blue = makeARGB(255, 20, 120, 255);
+    blue2 = makeARGB(0, 0, 0, 255);
+    black = makeARGB(0, 255, 255, 255);
+    
+    y = -30;
+    sy = -45;
+    speed = 0.04;
+    speed2 = 0.03;
+    speedMV = 0.25;
+    speedMV2 = 0.05;
+    
+    star = makeARGB(255, 255, 255, 255);
+}
+
+
+
+
+//------------BACKGROUND
+
+
+
+void background()
+{
+    //colx4, x, y, w, h
+    blendGradientRect (blue2, black, blue, blue, 0, int(y), 15, 45);
+    int sun = makeARGB(255, 255, 150, 0);
+    fillRect (sun, 2, int(y)+15, 3, 3);
+    
+    int sun2 = makeARGB(255, 255, 255, 0);
+    fillRect (sun2, 3, int(y)+16, 1, 1);
+    
+    int cloud1 = makeARGB(255, 200, 200, 200);
+    fillRect (cloud1, 2, int(y)+23, 3, 3);
+    
+    int cloud2 = makeARGB(255, 255, 255, 255);
+    fillRect (cloud2, 12, int(y)+24, 2, 2);
+        
+    int cloud3 = makeARGB(255, 255, 255, 255);
+    fillRect (cloud3, -2, int(y)+19, 3, 3);
+    
+    int floor = makeARGB(255, 0, 255, 0);
+    fillRect (floor, 0, int(y)+36, 15, 9);
+}
+
+void backgroundMove()
+{
+   int block_placeY = 15;
+     
+   if (y < block_placeY)
+      {
+          y = y + speedMV;
+      }
+}
+
+//--------SPACE
+
+void space()
+{
+    //colx4, x, y, w, h
+    blendGradientRect (black, black, black, black, 0, int(sy), 15, 15);
+    
+    int starx = 2;
+    int stary = int(sy)+2;
+    fillPixel(star, starx, stary);
+    fillPixel(star, starx+2, stary+2);
+    fillPixel(star, starx+2, stary+2);
+    fillPixel(star, starx+4, stary-1);
+    fillPixel(star, starx+6, stary+7);
+    fillPixel(star, starx+9, stary-1);
+    fillPixel(star, starx, stary+10);
+    fillPixel(star, starx+1, stary+8);
+    fillPixel(star, starx-1, stary+6);
+    fillPixel(star, starx+2, stary+4);
+    fillPixel(star, starx+8, stary+10);
+    fillPixel(star, starx+13, stary+10);
+    fillPixel(star, starx, stary+12);
+    fillPixel(star, starx+3, stary+9);
+    fillPixel(star, starx-1, stary+15);
+    fillPixel(star, starx+2, stary+4);
+    fillPixel(star, starx+8, stary+10);
+    fillPixel(star, starx+13, stary+14);
+}
+
+void spaceMove()
+{
+   int block_placeSY = 0;
+     
+   if (sy < block_placeSY)
+      {
+          sy = sy + speedMV;
+      }
+}
+
+void starMove()
+{
+    int star_place = 0;
+    
+    if (star < star_place)
+    {
+        star = star + int(speedMV);
+    }
+}
+
+//--------BALLOON
+
+
+void balloon()
+{ 
+    int balloonBody = makeARGB(255, 255, 0, 0);
+    fillRect (balloonBody, int(xPosition), int(yPosition), 4, 4);
+    
+    int balloonBody2 = makeARGB(255, 255, 5, 0);
+    fillRect (balloonBody2, int(xPosition)+1, int(yPosition)+1, 2, 2);
+}
+
+void balloonString(int x, int y)
+{ 
+    int balloonDangle = makeARGB(255, 255, 255, 255);
+    fillRect (balloonDangle, x, y, 1, 1);
+}
+
+void balloonString2(int x, int y)
+{ 
+    int balloonDangle = makeARGB(255, 255, 255, 255);
+    fillRect (balloonDangle, x, y, 1, 2);
+}
+
+void moveX()
+{
+    if (moveLeft)
+    {
+        xPosition = xPosition + speed;
+    }
+    else if (moveRight)
+    {
+        xPosition = xPosition - speed2;
+    }
+    
+    if (xPosition >= 10)
+    {
+        moveLeft = false;
+        moveRight = true;
+    }
+    else if (xPosition <= 8)
+    {
+        moveLeft = true;
+        moveRight = false;
+    }
+}
+
+//---------REPAINT
+
+void repaint()
+{
+    clearDisplay();
+    
+    background();
+    backgroundMove();
+    space();
+    spaceMove();
+    starMove();
+    balloon();
+    balloonString(10, 7);
+    balloonString2(11, 8);
+    moveX();
+    
+    
+}
+
+
+void handleButtonDown (int index)
+{
+    clearDisplay();
+    initialise();
+    sendNoteOn(1, 60, 100);
+}
+
+void handleButtonUp (int index)
+{
+
+}
+
+/* ------ STUFF
+
+void touchStart(int index, float x, float y, float z, float vz){}
+void touchMove
+void touchEnd
+
+
+
+*/
