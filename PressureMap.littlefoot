@@ -1,0 +1,42 @@
+void initialise()
+{
+   
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+   addPressurePoint (0xffffff, x, y, z * 100.0);
+   
+}
+   
+void touchMove (int index, float x, float y, float z, float vz)
+{
+   addPressurePoint (0xffffff, x, y, z * 20.0);
+}
+
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+   
+}
+
+void handleButtonDown (int index)
+{
+   
+}
+
+void handleButtonUp (int index)
+{
+   
+}
+
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+   
+}
+   
+void repaint()
+{
+   clearDisplay();
+    drawPressureMap();
+    fadePressureMap();
+}

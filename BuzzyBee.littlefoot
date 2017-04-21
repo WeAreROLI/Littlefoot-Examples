@@ -1,0 +1,71 @@
+int x;
+int y;
+
+int xDir;
+int yDir;
+
+void clear()
+{
+    fillRect (0x000000, 0, 0, 15, 15);
+}
+
+void repaint()
+{
+    clear();
+
+    fillRect (0x00FF00, x, y, 2, 2);
+	
+	if (xDir == 0)
+	{
+		x += 1;
+		if (x >= 13)
+		{
+			xDir = 1;
+		}
+	}
+	else
+	{
+		if (x <= 1)
+		{
+			xDir = 0;
+		}
+		x = x - 1;
+	}
+	
+	if (yDir == 0)
+	{
+		y += 1;
+		if (y >= 7)
+        {
+			yDir = 1;
+		}
+	}
+	else if (yDir == 1)
+	{
+		if (y <= 1)
+		{
+			yDir = 2;
+			y = 7;
+		}
+		else
+		{
+			y = y - 1;
+		}
+	}
+	else if (yDir == 2)
+	{
+		y += 1;
+		if (y >= 13)
+		{
+			yDir = 3;
+		}
+	}
+	else if (yDir == 3)
+	{
+		if (y <= 1)
+		{
+			yDir = 0;
+		}
+		y = y - 1;
+	}
+}

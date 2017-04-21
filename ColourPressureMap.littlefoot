@@ -1,0 +1,75 @@
+ /*
+ <metadata description="">
+    <variables>
+        <variable name="pressureColour0" displayName="Heat Colour 0" type="colour" value="0xFF0000" />
+        <variable name="pressureColour1" displayName="Heat Colour 1" type="colour" value="0x00FF00" />
+        <variable name="pressureColour2" displayName="Heat Colour 2" type="colour" value="0x0000FF" />
+        <variable name="pressureColour3" displayName="Heat Colour 2" type="colour" value="0xFF00FF" />
+        <variable name="scaling" displayName="How hot!" type="float" min="1" max="200" value="1" />
+    </variables>
+</meradata>
+*/   
+
+
+
+void initialise()
+{
+   
+}
+
+int getPressureColour (int index)
+{
+	int col = pressureColour3;
+	if (index == 1)
+	{
+		col = pressureColour0;
+	}
+	if (index == 2)
+	{	
+		col = pressureColour1;
+	}
+	if (index == 3)
+	{
+		col = pressureColour2;
+	}
+	
+	return col;
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+   addPressurePoint (getPressureColour (index), x, y, z * float (scaling));
+   
+}
+   
+void touchMove (int index, float x, float y, float z, float vz)
+{
+   addPressurePoint (getPressureColour (index), x, y, z * float (scaling));
+}
+
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+   
+}
+
+void handleButtonDown (int index)
+{
+   
+}
+
+void handleButtonUp (int index)
+{
+   
+}
+
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+   
+}
+   
+void repaint()
+{
+   	clearDisplay();
+    drawPressureMap();
+    fadePressureMap();
+}
