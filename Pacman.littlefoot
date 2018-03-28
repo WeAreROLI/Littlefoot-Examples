@@ -1,10 +1,8 @@
 /*
-<metadata description="Pacman is on the loose. You can speed him up by pressing into your BLOCK." target="All" tags="" >
-
+<metadata description="Pacman is on the loose. You can speed him up by pressing into your BLOCK.">
 </metadata>
 */
 
-//==============================================================================
 float position;
 float speed;
 
@@ -18,12 +16,12 @@ int  pacmanSize;
 
 void initialise()
 {
-    position   = -14.0;
-    speed      = 0.3; 
+    position = -14.0;
+    speed    =   0.3; 
     
-    mouthWidth     = 9;
-    mouthSpeed     = 2.0;
-    mouthHeight    = 7.0; 
+    mouthWidth     =    9;
+    mouthSpeed     =  2.0;
+    mouthHeight    =  7.0; 
     mouthMaxHeight = 12.0;
     
     msPacman = false;
@@ -47,24 +45,23 @@ void repaint()
     update();
 }
 
-
 void paintPacmanAt (int x, int y)
 { 
     int colour = makeARGB (255, 255, 255, 0); 
     
-    fillRect (colour, x+4, y,    5,  1);
-    fillRect (colour, x+2, y+1,  9,  1);
-    fillRect (colour, x+1, y+2,  11, 1);
-    fillRect (colour, x+1, y+3,  11, 1);
-    fillRect (colour, x+0, y+4,  13, 1);
-    fillRect (colour, x+0, y+5,  13, 1);
-    fillRect (colour, x+0, y+6,  13, 1);
-    fillRect (colour, x+0, y+7,  13, 1);
-    fillRect (colour, x+0, y+8,  13, 1);
-    fillRect (colour, x+1, y+9,  11, 1);
-    fillRect (colour, x+1, y+10, 11, 1);
-    fillRect (colour, x+2, y+11, 9, 1);
-    fillRect (colour, x+4, y+12, 5, 1);
+    fillRect (colour, x + 4, y,      5,  1);
+    fillRect (colour, x + 2, y + 1,  9,  1);
+    fillRect (colour, x + 1, y + 2,  11, 1);
+    fillRect (colour, x + 1, y + 3,  11, 1);
+    fillRect (colour, x + 0, y + 4,  13, 1);
+    fillRect (colour, x + 0, y + 5,  13, 1);
+    fillRect (colour, x + 0, y + 6,  13, 1);
+    fillRect (colour, x + 0, y + 7,  13, 1);
+    fillRect (colour, x + 0, y + 8,  13, 1);
+    fillRect (colour, x + 1, y + 9,  11, 1);
+    fillRect (colour, x + 1, y + 10, 11, 1);
+    fillRect (colour, x + 2, y + 11, 9,  1);
+    fillRect (colour, x + 4, y + 12, 5,  1);
 }
 
 void paintPacmanMouthAt (int x, int y)
@@ -76,7 +73,7 @@ void paintPacmanMouthAt (int x, int y)
     
     for (int i = 0; i < mouthWidth; ++i)
     {
-        int h = getMouthHeight(i, mouthHeight);
+        int h = getMouthHeight (i, mouthHeight);
         fillRect (colour, cx + i, cy - h / 2, 1, h);
     }
 }
@@ -84,27 +81,27 @@ void paintPacmanMouthAt (int x, int y)
 void paintAccessories (int x, int y)
 {
     int red = makeARGB (255, 255, 0, 0);
-    fillRect (red, x+0, y+4, 2, 2);
-    fillRect (red, x+2, y+2, 2, 2);
-    fillRect (red, x+4, y+0, 2, 2);
-    fillRect (red, x-1, y+1, 3, 4);
-    fillRect (red, x+1, y+1, 2, 2);
-    fillRect (red, x+1, y-1, 4, 2);
+    fillRect (red, x + 0, y + 4, 2, 2);
+    fillRect (red, x + 2, y + 2, 2, 2);
+    fillRect (red, x + 4, y + 0, 2, 2);
+    fillRect (red, x - 1, y + 1, 3, 4);
+    fillRect (red, x + 1, y + 1, 2, 2);
+    fillRect (red, x + 1, y - 1, 4, 2);
     
     int aqua = makeARGB (255, 51, 153, 255);
-    fillRect (aqua, x+2, y,   2, 2);
-    fillRect (aqua, x,   y+2, 2, 2);
+    fillRect (aqua, x + 2, y,     2, 2);
+    fillRect (aqua, x,     y + 2, 2, 2);
     
     int black = makeARGB (255, 0, 0, 0);
-    fillRect (black, x+4, y+4, 2, 1);
-    fillRect (black, x+3, y+5, 1, 1);
+    fillRect (black, x + 4, y + 4, 2, 1);
+    fillRect (black, x + 3, y + 5, 1, 1);
     
     for (int i = mouthWidth - 3; i < mouthWidth; ++i)
     {
         int cx = x + 3;
         int cy = y + 6;
-        int h = getMouthHeight(i, mouthHeight);
-        int halfHeight = int(h / 2.0);
+        int h = getMouthHeight (i, mouthHeight);
+        int halfHeight = int (h / 2.0);
         
         fillRect (red, cx + i, cy - halfHeight, 1, 1);
         fillRect (red, cx + i, cy + halfHeight, 1, 1);
@@ -119,31 +116,30 @@ void paintFood (int x, int y)
     
     int spacing = 2;
     
-    for (int i = 0; i < 14; i = i + spacing)
+    for (int i = 0; i < 14; i += spacing)
     {
         if (i > x + (pacmanSize / 2) - 1) 
             fillPixel (colour, i, cy);
     }
 }
 
-int getMouthHeight (int x, float H)
+int getMouthHeight (int x, float h)
 {
-    return int (x / 8.0 * H);
+    return int (x / 8.0 * h);
 }
 
 void update()
 {
-    position = position + speed;
+    position += speed;
     
     if (position > 14)
         position = 0 - pacmanSize;
-        
-        
-    mouthHeight = mouthHeight + mouthSpeed;
+    
+    mouthHeight += mouthSpeed;
     
     if (mouthHeight > mouthMaxHeight || mouthHeight < 0)
     {
-        mouthSpeed = -1.0 * mouthSpeed;
+        mouthSpeed *= -1.0;
     }
 }
 

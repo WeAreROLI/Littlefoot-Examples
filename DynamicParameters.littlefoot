@@ -1,0 +1,28 @@
+/*
+<metadata description="Dynamic Parameters">
+    <groups>
+        <group name="pos"    displayName="Position" />
+        <group name="size"   displayName="Size"     />
+        <group name="colour" displayName="Colour"   />
+    </groups>
+	<variables>
+		<variable group="pos"    name="xPos"   type="int"   min="0" max="15"  value="6"   />
+		<variable group="pos"    name="yPos"   type="int"   min="0" max="15"  value="6"   />
+		<variable group="size"   name="width"  type="int"   min="1" max="15"  value="3"   />
+		<variable group="size"   name="height" type="int"   min="1" max="15"  value="3"   />
+		<variable group="colour" name="alpha"  type="float" min="0" max="255" value="255" />
+		<variable group="colour" name="red"    type="int"   min="0" max="255" value="255" />
+		<variable group="colour" name="green"  type="int"   min="0" max="255" value="0"   />
+		<variable group="colour" name="blue"   type="int"   min="0" max="255" value="0"   />
+		<variable name="draw"    type="bool"   value="true" />
+	</variables>
+</metadata>
+*/
+
+void repaint()
+{
+    clearDisplay();
+    
+    if (draw)
+        fillRect (makeARGB (int (alpha), red, green, blue), xPos, yPos, width, height);
+}

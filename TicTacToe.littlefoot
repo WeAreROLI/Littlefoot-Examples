@@ -1,10 +1,7 @@
 /*
-<metadata description="A fun game of Tic Tac Toe for all the family. Press the Mode button to start a new game." target="All" tags="" >
-
+<metadata description="A fun game of Tic Tac Toe for all the family. Press the Mode button to start a new game.">
 </metadata>
 */
-
-//==============================================================================
 
 int tl, t, tr;
 int ml, m, mr;
@@ -37,7 +34,7 @@ void repaint()
     if (winner == 0)
     {
         drawGrid();
-        drawOrnaments();
+        drawSigns();
     }
     else
     {
@@ -49,19 +46,19 @@ void drawWinner()
 {
     if (winner == 1)
     {
-        int xColour = makeARGB(255, 0, 255, 0);
+        int xColour = makeARGB (255, 0, 255, 0);
         fillRect (xColour, 0, 0, 15, 15);        
     }
     else if (winner == 2)
     {
-        int yColour = makeARGB(255, 0, 0, 255);
-        fillRect (yColour, 0, 0, 15, 15);        
+        int oColour = makeARGB (255, 0, 0, 255);
+        fillRect (oColour, 0, 0, 15, 15);        
     }
 }
 
 void drawGrid()
 {
-    int white = makeARGB(255, 200, 200, 200);
+    int white = makeARGB (255, 200, 200, 200);
     
     if (tl == 0) drawRect (white, 0,  0,  5, 5);
     if (t  == 0) drawRect (white, 5,  0,  5, 5);
@@ -79,19 +76,19 @@ void drawRect (int colour, int x, int y, int w, int h)
     fillRect (colour, x, y, 1, h);
     fillRect (colour, x, y, w, 1);
     
-    fillRect (colour, x + w - 1, y, 1, h);
-    fillRect (colour, x, y + h - 1, w, 1);
+    fillRect (colour, x + w - 1, y,         1, h);
+    fillRect (colour, x,         y + h - 1, w, 1);
 }
 
-void drawOrnaments()
+void drawSigns()
 {
-    evaluate (tl, 0,  0);
-    evaluate (t , 5,  0);
-    evaluate (tr, 10, 0);
+    evaluate (tl, 0,   0);
+    evaluate (t , 5,   0);
+    evaluate (tr, 10,  0);
     
-    evaluate (ml, 0,  5);
-    evaluate (m,  5,  5);
-    evaluate (mr, 10, 5);
+    evaluate (ml, 0,   5);
+    evaluate (m,  5,   5);
+    evaluate (mr, 10,  5);
     
     evaluate (bl, 0,  10);
     evaluate (b,  5,  10);
@@ -102,44 +99,41 @@ void evaluate (int value, int x, int y)
 {
     if (value == 1)
         drawX (x, y);
-    
-    if (value == 2)
+    else if (value == 2)
         drawO (x, y);
 }
 
-
 void drawX (int x, int y)
 {
-    int xColour = makeARGB(255, 0, 255, 0);
+    int xColour = makeARGB (255, 0, 255, 0);
     
-    fillRect (xColour, x,   y,   1, 1);
-    fillRect (xColour, x+1, y+1, 1, 1);
-    fillRect (xColour, x+2, y+2, 1, 1);
-    fillRect (xColour, x+3, y+3, 1, 1);
-    fillRect (xColour, x+4, y+4, 1, 1);
+    fillRect (xColour, x,     y,     1, 1);
+    fillRect (xColour, x + 1, y + 1, 1, 1);
+    fillRect (xColour, x + 2, y + 2, 1, 1);
+    fillRect (xColour, x + 3, y + 3, 1, 1);
+    fillRect (xColour, x + 4, y + 4, 1, 1);
     
-    fillRect (xColour, x+4, y,   1, 1);
-    fillRect (xColour, x+3, y+1, 1, 1);
-    fillRect (xColour, x+2, y+2, 1, 1);
-    fillRect (xColour, x+1, y+3, 1, 1);
-    fillRect (xColour, x,   y+4, 1, 1);
+    fillRect (xColour, x + 4, y,     1, 1);
+    fillRect (xColour, x + 3, y + 1, 1, 1);
+    fillRect (xColour, x + 2, y + 2, 1, 1);
+    fillRect (xColour, x + 1, y + 3, 1, 1);
+    fillRect (xColour, x,     y + 4, 1, 1);
 }
 
 void drawO (int x, int y)
 {
-    int yColour = makeARGB(255, 0, 0, 255);
+    int oColour = makeARGB (255, 0, 0, 255);
     
-    fillRect (yColour, x,   y,   5, 1);
-    fillRect (yColour, x,   y+4, 5, 1);
-    fillRect (yColour, x,   y,   1, 5);
-    fillRect (yColour, x+4, y,   1, 5);
+    fillRect (oColour, x,     y,     5, 1);
+    fillRect (oColour, x,     y + 4, 5, 1);
+    fillRect (oColour, x,     y,     1, 5);
+    fillRect (oColour, x + 4, y,     1, 5);
 }
-
 
 void touchStart (int index, float x, float y, float z, float vz)
 {
-    int xPos = int (x * 7.5);
-    int yPos = int (y * 7.5);
+    int xPos = int (x * 7);
+    int yPos = int (y * 7);
     
     int index = getIndex (xPos, yPos);
     
@@ -175,22 +169,21 @@ bool setValueForIndex (int index, int value)
     return false;
 }
 
-bool xHasWon() { return hasWon(1); }
-bool oHasWon() { return hasWon(2); }
+bool xHasWon() { return hasWon (1); }
+bool oHasWon() { return hasWon (2); }
 
-bool hasWon(int player)
+bool hasWon (int player)
 {
-    return 
-       (tl == player && t == player && tr == player) 
-    || (ml == player && m == player && mr == player) 
-    || (bl == player && b == player && br == player) 
+    return (tl == player && t  == player && tr == player) 
+        || (ml == player && m  == player && mr == player) 
+        || (bl == player && b  == player && br == player) 
     
-    || (tl == player && ml == player && bl == player)
-    || (t  == player && m  == player && b == player)
-    || (tr == player && mr == player && br == player)
+        || (tl == player && ml == player && bl == player)
+        || (t  == player && m  == player && b  == player)
+        || (tr == player && mr == player && br == player)
     
-    || (tl == player && m == player && br == player)
-    || (tr == player && m == player && bl == player)
+        || (tl == player && m  == player && br == player)
+        || (tr == player && m  == player && bl == player);
 }
 
 void handleButtonDown (int index)

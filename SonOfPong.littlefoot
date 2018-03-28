@@ -1,0 +1,70 @@
+/*
+<metadata description="Son Of Pong">
+</metadata>
+*/
+
+int  ballX,    ballY;
+bool ballXVec, ballYVec;
+bool hasStarted;
+
+int  paddleL, paddleR;
+
+void repaint()
+{
+    fillRect (0x000000, 0, 0, 15, 15);
+	
+	if (! hasStarted)
+	{
+		ballX = 7;
+		ballY = 7;
+	
+		ballXVec   = true;
+		ballYVec   = false;
+		hasStarted = true;
+
+		paddleL = 7;
+		paddleR = 7;
+	}
+
+	if (ballXVec)
+	{
+		ballX += 1;
+		if (ballX >= 13)
+		{
+			ballX = 13;
+			ballXVec = false;
+		}
+	}
+	else 
+	{
+		if (ballX <= 2)
+		{
+			ballX = 2;
+			ballXVec = true;
+		}
+		ballX -= 1;
+	}
+
+	if (ballYVec)
+	{
+		ballY += 1;
+		if (ballY >= 15)
+		{
+			ballY = 15;
+			ballYVec = false;
+		}
+	}
+	else 
+	{
+		if (ballY <= 1)
+		{
+			ballYVec = true;
+		}
+		ballY -= 1;
+	}
+
+    fillRect (0xFFFF00, ballX, ballY, 1, 1);
+
+	fillRect (0xFFFF00, 0,  paddleL - 2, 1, 5);
+	fillRect (0xFFFF00, 14, paddleR - 2, 1, 5);
+}
