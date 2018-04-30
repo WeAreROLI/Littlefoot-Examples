@@ -1,0 +1,263 @@
+/*
+<metadata description="Turn your Lightpad Block into the control panel of the Seaboard RISE." details="This app emulates the side controls on a Seaboard Rise. Use the mode button to switch between sliders and XY pad which all map automatically to preset macros in Equator." target="Lightpad" tags="Controller;MIDI"  canEmbedModes="false">
+    
+    <groups>
+        <group name="xyzpad" displayName="XYZ Pad" />
+        <group name="sliders" displayName="Sliders" />
+        <group name="colours" displayName="Colours" />
+    </groups>
+
+    <variables>
+        <variable name="channel" displayName="MIDI Channel" type="int" min="1" max="16" value="1" displayMode="stepper" tooltip="The MIDI channel that values are sent on" />
+        <variable name="xCC" displayName="X axis CC" group="xyzpad" type="int" min="0" max="127" value="113" displayMode="stepper" tooltip="The MIDI CC that is sent for X position changes"/>
+        <variable name="yCC" displayName="Y axis CC" group="xyzpad" type="int" min="0" max="127" value="114" displayMode="stepper" tooltip="The MIDI CC that is sent for Y position changes" />
+        <variable name="s0CC" displayName="Slider 1 CC" group="sliders" type="int" min="0" max="127" value="107" displayMode="stepper" tooltip="The MIDI CC value that is sent by the slider"/>
+        <variable name="s1CC" displayName="Slider 2 CC" group="sliders" type="int" min="0" max="127" value="109" displayMode="stepper" tooltip="The MIDI CC value that is sent by the slider"/>
+        <variable name="s2CC" displayName="Slider 3 CC" group="sliders" type="int" min="0" max="127" value="111" displayMode="stepper" tooltip="The MIDI CC value that is sent by the slider"/>
+        <variable name="xyzColour" group="colours" displayName="XYZ Touch colour" type="colour" value="0xFFFF00" tooltip="Colour of the the XYZ touch heat map"/>
+        <variable name="xyzBackColour" group="colours" displayName="XYZ Background colour" type="colour" value="0x180029" tooltip="The colour of the XYZ pad background"/>
+        <variable name="s0Colour" group="colours" displayName="Slider 1 Colour" type="colour" value="0x5082f1" tooltip="The colour of slider 1"/>
+        <variable name="s1Colour" group="colours" displayName="Slider 2 Colour" type="colour" value="0x5082f1" tooltip="The colour of slider 2" />
+        <variable name="s2Colour" group="colours" displayName="Slider 3 Colour" type="colour" value="0x5082f1" tooltip="The colour of slider 3" />
+        <variable name="send" displayName="Send" type="option" value="All" options="All;X;Y;" />
+    
+    </variables>
+
+</metadata>
+*/
+
+int view;
+const int faderView = 0;
+const int xyPadView = 1;
+
+int slider0;
+int slider1;
+int slider2;
+
+void initialise()
+{
+    view = faderView;
+    
+    slider0 = slider1 = slider2 = 64;
+    
+    for (int i = 0; i < 32; ++i)
+        setLocalConfigActiveState (i, false, false);
+}
+
+int mapTouchToRange (float v, float max)
+{
+    return int (map (v, 7.0 / 100.0, 193.0 / 100.0, 0.0, max));
+}
+
+void handleTouchFader (int index, float x, float y, float z, float vz)
+{
+    int xPixel = mapTouchToRange (x,  14.0);
+    int yValue = 127 - mapTouchToRange (y, 127.0);
+    
+    if (xPixel < 5)
+    {
+        slider0 = yValue;
+        sendCC ((channel - 1), s0CC, slider0);
+    }
+    if (xPixel >= 5  && xPixel < 10)
+    {
+        slider1 = yValue;
+        sendCC ((channel - 1), s1CC, slider1);
+    }
+    if (xPixel >= 10)
+    {
+        slider2 = yValue;
+        sendCC ((channel - 1), s2CC, slider2);
+    }
+}
+
+int mapTouchToRange (float v, float inMin, float inMax, float outMax)
+{
+    return int (map (v, inMin / 100.0, inMax / 100.0, 0.0, outMax));
+}
+
+void outputCC (float v, int cc, float inMin, float inMax, bool invert)
+{
+    int value = mapTouchToRange (v, inMin, inMax, 127.0);
+    if (invert)
+        value = 127 - value;
+    
+    sendCC ((channel - 1), cc, value);
+}
+
+void handleTouchXYPad (int index, float x, float y, float z, float vz)
+{
+
+    addPressurePoint (xyzColour, x, y, z * 20.0); 
+
+    if (send == 0 || send == 1) outputCC (x, xCC, 7.0, 193.0, false);
+    if (send == 0 || send == 2) outputCC (y, yCC, 7.0, 193.0, true);
+}
+
+void handleTouch (int index, float x, float y, float z, float vz)
+{
+    if (view == faderView)    
+        handleTouchFader (index, x, y, z, vz);
+        
+    if (view == xyPadView)    
+        handleTouchXYPad (index, x, y, z, vz);
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+    handleTouch (index, x, y, z, vz);
+}
+
+void touchMove (int index, float x, float y, float z, float vz)
+{
+    handleTouch (index, x, y, z, vz);
+}
+
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+    handleTouch (index, x, y, z, vz);
+}
+
+void handleButtonDown (int index)
+{
+    if (view == faderView)
+        view = xyPadView;
+    else
+        view = faderView;
+}
+
+void repaint()
+{
+    clearDisplay();
+    
+    if (view == faderView)    
+        paintFaderView();
+        
+    if (view == xyPadView)    
+        paintXYPadView();
+}
+
+void paintFaderView()
+{
+    int slider0DrawableHeight = int (map (float (slider0), 0.0, 127.0, 1.0, 15.0));
+    int slider1DrawableHeight = int (map (float (slider1), 0.0, 127.0, 1.0, 15.0));
+    int slider2DrawableHeight = int (map (float (slider2), 0.0, 127.0, 1.0, 15.0));
+    
+    fillRect (s0Colour, 0,  15 - slider0DrawableHeight, 4, slider0DrawableHeight);
+    fillRect (s1Colour, 5,  15 - slider1DrawableHeight, 4, slider1DrawableHeight);
+    fillRect (s2Colour, 10, 15 - slider2DrawableHeight, 4, slider2DrawableHeight);
+}
+
+void paintXYPadView()
+{
+    fillRect (xyzBackColour, 0, 0, 15, 15);
+    drawPressureMap();
+    fadePressureMap();
+}
+
+/*
+<display backgroundColour="0xFF2E362D" textColour ="0xFFFFFFFF">
+    <pixels>
+        <pixel index="0" colour="0xB75F8CC2" />
+        <pixel index="1" colour="0xB75F8CC2" />
+        <pixel index="2" colour="0xB75F8CC2" />
+        <pixel index="3" colour="0xB75F8CC2" />
+        <pixel index="5" colour="0xB75F8CC2" />
+        <pixel index="6" colour="0xB75F8CC2" />
+        <pixel index="7" colour="0xB75F8CC2" />
+        <pixel index="8" colour="0xB75F8CC2" />
+        <pixel index="10" colour="0xB75F8CC2" />
+        <pixel index="11" colour="0xB75F8CC2" />
+        <pixel index="12" colour="0xB75F8CC2" />
+        <pixel index="13" colour="0xB75F8CC2" />
+        <pixel index="15" colour="0xB75F8CC2" />
+        <pixel index="16" colour="0xB75F8CC2" />
+        <pixel index="17" colour="0xB75F8CC2" />
+        <pixel index="18" colour="0xB75F8CC2" />
+        <pixel index="20" colour="0xB75F8CC2" />
+        <pixel index="21" colour="0xB75F8CC2" />
+        <pixel index="22" colour="0xB75F8CC2" />
+        <pixel index="23" colour="0xB75F8CC2" />
+        <pixel index="25" colour="0xB75F8CC2" />
+        <pixel index="26" colour="0xB75F8CC2" />
+        <pixel index="27" colour="0xB75F8CC2" />
+        <pixel index="28" colour="0xB75F8CC2" />
+        <pixel index="30" colour="0xB75F8CC2" />
+        <pixel index="31" colour="0xB75F8CC2" />
+        <pixel index="32" colour="0xB75F8CC2" />
+        <pixel index="33" colour="0xB75F8CC2" />
+        <pixel index="35" colour="0xB75F8CC2" />
+        <pixel index="36" colour="0xB75F8CC2" />
+        <pixel index="37" colour="0xB75F8CC2" />
+        <pixel index="38" colour="0xB75F8CC2" />
+        <pixel index="40" colour="0xB75F8CC2" />
+        <pixel index="41" colour="0xB75F8CC2" />
+        <pixel index="42" colour="0xB75F8CC2" />
+        <pixel index="43" colour="0xB75F8CC2" />
+        <pixel index="45" colour="0xB75F8CC2" />
+        <pixel index="46" colour="0xB75F8CC2" />
+        <pixel index="47" colour="0xB75F8CC2" />
+        <pixel index="48" colour="0xB75F8CC2" />
+        <pixel index="50" colour="0xB75F8CC2" />
+        <pixel index="51" colour="0xB75F8CC2" />
+        <pixel index="52" colour="0xB75F8CC2" />
+        <pixel index="53" colour="0xB75F8CC2" />
+        <pixel index="55" colour="0xB75F8CC2" />
+        <pixel index="56" colour="0xB75F8CC2" />
+        <pixel index="57" colour="0xB75F8CC2" />
+        <pixel index="58" colour="0xB75F8CC2" />
+        <pixel index="60" colour="0xB75F8CC2" />
+        <pixel index="61" colour="0xB75F8CC2" />
+        <pixel index="62" colour="0xB75F8CC2" />
+        <pixel index="63" colour="0xB75F8CC2" />
+        <pixel index="65" colour="0xB75F8CC2" />
+        <pixel index="66" colour="0xB75F8CC2" />
+        <pixel index="67" colour="0xB75F8CC2" />
+        <pixel index="68" colour="0xB75F8CC2" />
+        <pixel index="70" colour="0xB75F8CC2" />
+        <pixel index="71" colour="0xB75F8CC2" />
+        <pixel index="72" colour="0xB75F8CC2" />
+        <pixel index="73" colour="0xB75F8CC2" />
+        <pixel index="75" colour="0xB75F8CC2" />
+        <pixel index="76" colour="0xB75F8CC2" />
+        <pixel index="77" colour="0xB75F8CC2" />
+        <pixel index="78" colour="0xB75F8CC2" />
+        <pixel index="80" colour="0xB75F8CC2" />
+        <pixel index="81" colour="0xB75F8CC2" />
+        <pixel index="82" colour="0xB75F8CC2" />
+        <pixel index="83" colour="0xB75F8CC2" />
+        <pixel index="90" colour="0xB75F8CC2" />
+        <pixel index="91" colour="0xB75F8CC2" />
+        <pixel index="92" colour="0xB75F8CC2" />
+        <pixel index="93" colour="0xB75F8CC2" />
+        <pixel index="95" colour="0xB75F8CC2" />
+        <pixel index="96" colour="0xB75F8CC2" />
+        <pixel index="97" colour="0xB75F8CC2" />
+        <pixel index="98" colour="0xB75F8CC2" />
+        <pixel index="105" colour="0xB75F8CC2" />
+        <pixel index="106" colour="0xB75F8CC2" />
+        <pixel index="107" colour="0xB75F8CC2" />
+        <pixel index="108" colour="0xB75F8CC2" />
+        <pixel index="110" colour="0xB75F8CC2" />
+        <pixel index="111" colour="0xB75F8CC2" />
+        <pixel index="112" colour="0xB75F8CC2" />
+        <pixel index="113" colour="0xB75F8CC2" />
+        <pixel index="125" colour="0xB75F8CC2" />
+        <pixel index="126" colour="0xB75F8CC2" />
+        <pixel index="127" colour="0xB75F8CC2" />
+        <pixel index="128" colour="0xB75F8CC2" />
+        <pixel index="140" colour="0xB75F8CC2" />
+        <pixel index="141" colour="0xB75F8CC2" />
+        <pixel index="142" colour="0xB75F8CC2" />
+        <pixel index="143" colour="0xB75F8CC2" />
+        <pixel index="155" colour="0xB75F8CC2" />
+        <pixel index="156" colour="0xB75F8CC2" />
+        <pixel index="157" colour="0xB75F8CC2" />
+        <pixel index="158" colour="0xB75F8CC2" />
+        <pixel index="170" colour="0xB75F8CC2" />
+        <pixel index="171" colour="0xB75F8CC2" />
+        <pixel index="172" colour="0xB75F8CC2" />
+        <pixel index="173" colour="0xB75F8CC2" />
+    </pixels>
+</display>
+*/

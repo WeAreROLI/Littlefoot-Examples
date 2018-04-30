@@ -1,0 +1,708 @@
+/*
+<metadata description="Instantly generate chords and rhythms with this fun App!" details="Tap to create a note emitter, tap again to change it's direction. Tap in an empty space to add enough emitter. To reset, tap the Mode button." 
+          target="Lightpad" 
+          tags="MIDI;Melodic;Generator;" canEmbedModes="false">
+	<variables>
+        <variable name="speed" displayName="Speed" type="float" min="0" max="5" value="1" tooltip="How fast are notes generated?" />
+        <variable name="rootNote" displayName="Root Note" type="midiNote" value="C1" tooltip="What is the root note of the sounds being generated"/>
+        <variable name="chord" displayName="Chord" type="option" value="Major" options="Major;minor" tooltip="What type of scale do you want to be generated"/>
+	</variables>
+</metadata>
+*/
+
+
+//==============================================================================
+int green;
+int red;
+int blue;
+int yellow;
+int count;
+
+int clock;
+
+float bullet1x;
+float bullet1y;
+float bullet2x;
+float bullet2y;
+float bullet3x;
+float bullet3y;
+float bullet4x;
+float bullet4y;
+float bullet5x;
+float bullet5y;
+
+int bullet1d;
+int bullet2d;
+int bullet3d;
+int bullet4d;
+int bullet5d;
+
+int blob1x;
+int blob1y;
+int blob2x;
+int blob2y;
+int blob3x;
+int blob3y;
+int blob4x;
+int blob4y;
+int blob5x;
+int blob5y;
+
+int blob1d;
+int blob2d;
+int blob3d;
+int blob4d;
+int blob5d;
+
+int lastNote1;
+int lastNote2;
+int lastNote3;
+int lastNote4;
+int lastNote5;
+
+void initialise()
+{
+    clearDisplay();
+
+    sendCC (0, 120, 127);
+
+    blob1x = -99;
+    blob2x = -99;
+    blob3x = -99;
+    blob4x = -99;
+    blob5x = -99;
+
+    blob1d = 3;
+    blob2d = 3;
+    blob3d = 3;
+    blob4d = 3;
+    blob5d = 3;
+
+    bullet1x = -99;
+    bullet2x = -99;
+    bullet3x = -99;
+    bullet4x = -99;
+    bullet5x = -99;
+
+    bullet1x = -99;
+    bullet2x = -99;
+    bullet3x = -99;
+    bullet4x = -99;
+    bullet5x = -99;
+
+    bullet1y = -99;
+    bullet2y = -99;
+    bullet3y = -99;
+    bullet4y = -99;
+    bullet5y = -99;
+
+    green = 0x2200FF00;
+    red = 0x22FF0000;
+    blue = 0x220000FF;
+    yellow = 0x22FFFF00;
+    count = 0;
+	for (int i = 0; i < 32; ++i)
+        setLocalConfigActiveState (i, false, false);
+}
+
+// Detect touches
+
+void touchStart (int touchIndex, float x, float y, float z, float vz)
+{
+    int intX = int (x*7);
+    int intY = int (y*7);
+
+    int touch = touchBlob (intX, intY);
+
+    log(touch);
+
+    if (touch >= 1)
+    {
+        changeBlob(touch);
+        log(123);
+    }
+    else if (count < 5)
+    {
+        if (z < 0.05)
+        {
+            assignBlob (intX, intY, count, 0);
+        }
+        else if (z < 0.2)
+        {
+            assignBlob (intX, intY, count, 1);
+        }
+        else if (z < 0.5)
+        {
+            assignBlob (intX, intY, count, 2);
+        }
+        else
+        {
+            assignBlob (intX, intY, count, 3);
+        }
+        count ++;
+    }
+}
+
+//Detect if touch is on a Blob
+int touchBlob (int x, int y)
+{
+    int touch;
+
+    if (x >= (blob1x-1) && x <= (blob1x+1) && y >= (blob1y-1) && y <= (blob1y+1))
+    {
+        touch = 1;
+    }
+    else if (x >= (blob2x-1) && x <= (blob2x+1) && y >= (blob2y-1) && y <= (blob2y+1))
+    {
+        touch = 2;
+    }
+    else if (x >= (blob3x-1) && x <= (blob3x+1) && y >= (blob3y-1) && y <= (blob3y+1))
+    {
+        touch = 3;
+    }
+    else if (x >= (blob4x-1) && x <= (blob4x+1) && y >= (blob4y-1) && y <= (blob4y+1))
+    {
+        touch = 4;
+    }
+    else if (x >= (blob5x-1) && x <= (blob5x+1) && y >= (blob5y-1) && y <= (blob5y+1))
+    {
+        touch = 5;
+    }
+    else
+    {
+        touch = 0;
+    }
+    return touch;
+}
+
+void changeBlob(int blob){
+    if (blob == 1)
+    {
+        if (blob1d < 3){
+            blob1d++;
+        }
+        else{
+            blob1d = 0;
+        }
+    }
+    else if (blob == 2)
+    {
+        if (blob2d < 3){
+            blob2d++;
+        }
+        else{
+            blob2d = 0;
+        }
+    }
+    else if (blob == 3)
+    {
+        if (blob3d < 3){
+            blob3d++;
+        }
+        else{
+            blob3d = 0;
+        }
+    }
+    else if (blob == 4)
+    {
+        if (blob4d < 3){
+            blob4d++;
+        }
+        else{
+            blob4d = 0;
+        }
+    }
+    else if (blob == 5)
+    {
+        if (blob5d < 3){
+            blob5d++;
+        }
+        else{
+            blob5d = 0;
+        }
+    }
+}
+
+// Blob Creation and Assignment!
+
+void paintBlob (int x, int y, int type)
+{
+    if (type == 0)
+    {
+        fillRect(green, x, y-1, 1, 2);
+        blendRect(green, x-1, y, 3, 1);
+    }
+    else if (type == 1)
+    {
+        fillRect(red, x, y, 2, 1);
+        blendRect(red, x, y-1, 1, 3);
+    }
+    else if (type == 2)
+    {
+        fillRect(blue, x, y, 1, 2);
+        blendRect(blue, x-1, y, 3, 1);
+    }
+    else if (type == 3)
+    {
+        fillRect(yellow, x-1, y, 2, 1);
+        blendRect(yellow, x, y-1, 1, 3);
+    }
+}
+
+
+void assignBlob (int x, int y, int index, int type)
+{
+    if (index == 0)
+    {
+        blob1x = x;
+        blob1y = y;
+        blob1d = type;
+        spawnBullet1();
+    }
+    else if (index == 1)
+    {
+        blob2x = x;
+        blob2y = y;
+        blob2d = type;
+        spawnBullet2();
+    }
+    else if (index == 2)
+    {
+        blob3x = x;
+        blob3y = y;
+        blob3d = type;
+        spawnBullet3();
+    }
+    else if (index == 3)
+    {
+        blob4x = x;
+        blob4y = y;
+        blob4d = type;
+        spawnBullet4();
+    }
+    else if (index == 4)
+    {
+        blob5x = x;
+        blob5y = y;
+        blob5d = type;
+        spawnBullet5();
+    }
+}
+
+// Make Bullets!
+
+void spawnBullet1()
+{
+    bullet1x = blob1x;
+    bullet1y = blob1y;
+    bullet1d = blob1d;
+}
+
+void spawnBullet2()
+{
+    bullet2x = blob2x;
+    bullet2y = blob2y;
+    bullet2d = blob2d;
+}
+
+void spawnBullet3()
+{
+    bullet3x = blob3x;
+    bullet3y = blob3y;
+    bullet3d = blob3d;
+}
+
+void spawnBullet4()
+{
+    bullet4x = blob4x;
+    bullet4y = blob4y;
+    bullet4d = blob4d;
+}
+
+void spawnBullet5()
+{
+    bullet5x = blob5x;
+    bullet5y = blob5y;
+    bullet5d = blob5d;
+}
+
+
+void drawBullet (float x, float y, int d)
+{
+    fillPixel(0xFF222222, int(x), int(y));
+
+    if (d == 0)
+    {
+        fillPixel(0xFFFFFF, int(x), int(y-1));
+    }
+    else if (d == 1)
+    {
+        fillPixel(0xFFFFFF, int(x+1), int(y));
+    }
+    else if (d == 2)
+    {
+        fillPixel(0xFFFFFF, int(x), int(y+1));
+    }
+    else
+    {
+        fillPixel(0xFFFFFF, int(x-1), int(y));
+    }
+}
+
+void updateBullet1()
+{
+    if (blob1d == 0)
+    {
+        bullet1y = bullet1y - speed;
+    }
+    else if (blob1d == 1)
+    {
+        bullet1x = bullet1x + speed;
+    }
+    else if (blob1d == 2)
+    {
+        bullet1y = bullet1y + speed;
+    }
+    else if (blob1d == 3)
+    {
+        bullet1x = bullet1x - speed;
+    }
+}
+
+void updateBullet2()
+{
+    if (blob2d == 0)
+    {
+        bullet2y = bullet2y - speed;
+    }
+    else if (blob2d == 1)
+    {
+        bullet2x = bullet2x + speed;
+    }
+    else if (blob2d == 2)
+    {
+        bullet2y = bullet2y + speed;
+    }
+    else if (blob2d == 3)
+    {
+        bullet2x = bullet2x - speed;
+    }
+}
+
+void updateBullet3()
+{
+    if (blob3d == 0)
+    {
+        bullet3y = bullet3y - speed;
+    }
+    else if (blob3d == 1)
+    {
+        bullet3x = bullet3x + speed;
+    }
+    else if (blob3d == 2)
+    {
+        bullet3y = bullet3y + speed;
+    }
+    else if (blob3d == 3)
+    {
+        bullet3x = bullet3x - speed;
+    }
+}
+
+void updateBullet4()
+{
+    if (blob4d == 0)
+    {
+        bullet4y = bullet4y - speed;
+    }
+    else if (blob4d == 1)
+    {
+        bullet4x = bullet4x + speed;
+    }
+    else if (blob4d == 2)
+    {
+        bullet4y = bullet4y + speed;
+    }
+    else if (blob4d == 3)
+    {
+        bullet4x = bullet4x - speed;
+    }
+}
+
+void updateBullet5()
+{
+    if (blob5d == 0)
+    {
+        bullet5y = bullet5y - speed;
+    }
+    else if (blob5d == 1)
+    {
+        bullet5x = bullet5x + speed;
+    }
+    else if (blob5d == 2)
+    {
+        bullet5y = bullet5y + speed;
+    }
+    else if (blob5d == 3)
+    {
+        bullet5x = bullet5x - speed;
+    }
+}
+
+void detectBullet()
+{
+    //Bullet1
+    if (bullet1x > 15)
+    {
+        spawnBullet1();
+        midiNote(0, 0);
+    }
+    else if (bullet1x < 0 && bullet1x > -90)
+    {
+        spawnBullet1();
+        midiNote(0, 1);
+    }
+    else if (bullet1y > 15)
+    {
+        spawnBullet1();
+        midiNote(0, 2);
+    }
+    else if (bullet1y < 0 && bullet1y > -90)
+    {
+        spawnBullet1();
+        midiNote(0, 3);
+    }
+
+    //Bullet2
+    if (bullet2x > 15)
+    {
+        spawnBullet2();
+        midiNote(1, 0);
+    }
+    else if (bullet2x < 0 && bullet2x > -90)
+    {
+        spawnBullet2();
+        midiNote(1, 1);
+    }
+    else if (bullet2y > 15)
+    {
+        spawnBullet2();
+        midiNote(1, 2);
+    }
+    else if (bullet2y < 0 && bullet2y > -90)
+    {
+        spawnBullet2();
+        midiNote(1, 3);
+    }
+
+    //Bullet3
+    if (bullet3x > 15)
+    {
+        spawnBullet3();
+        midiNote(2, 0);
+    }
+    else if (bullet3x < 0 && bullet3x > -90)
+    {
+        spawnBullet3();
+        midiNote(2, 1);
+    }
+    else if (bullet3y > 15)
+    {
+        spawnBullet3();
+        midiNote(2, 2);
+    }
+    else if (bullet3y < 0 && bullet3y > -90)
+    {
+        spawnBullet3();
+        midiNote(2, 3);
+    }
+
+    //Bullet4
+    if (bullet4x > 15)
+    {
+        spawnBullet4();
+        midiNote(3, 0);
+    }
+    else if (bullet4x < 0 && bullet4x > -90)
+    {
+        spawnBullet4();
+        midiNote(3, 1);
+    }
+    else if (bullet4y > 15)
+    {
+        spawnBullet4();
+        midiNote(3, 2);
+    }
+    else if (bullet4y < 0 && bullet4y > -90)
+    {
+        spawnBullet4();
+        midiNote(3, 3);
+    }
+
+    //Bullet5
+    if (bullet5x > 15)
+    {
+        spawnBullet5();
+        midiNote(4, 0);
+    }
+    else if (bullet5x < 0 && bullet5x > -90)
+    {
+        spawnBullet5();
+        midiNote(4, 1);
+    }
+    else if (bullet5y > 15)
+    {
+        spawnBullet5();
+        midiNote(4, 2);
+    }
+    else if (bullet5y < 0 && bullet5y > -90)
+    {
+        spawnBullet5();
+        midiNote(4, 3);
+    }
+}
+
+//MIDI FUN!
+
+void midiNote(int note1, int note2)
+{
+    note2 = note2 * 12;
+    int note = rootNote;
+
+    if (note1 == 0)
+    {
+        note = note + note2;
+        note1(note);
+    }
+    else if (note1 == 1)
+    {
+        if (chord == 0)
+        {
+            note = note + 4;
+        }
+        else
+        {
+            note = note + 3;
+        }
+        note = note + note2;
+        note2(note);
+    }
+    else if (note1 == 2)
+    {
+        note = note + 7;
+        note = note + note2;
+        note3(note);
+    }
+    else if (note1 == 3)
+    {
+        if (chord == 0)
+        {
+            note = note + 11;
+        }
+        else
+        {
+            note = note + 10;
+        }
+        note = note + note2;
+        note4(note);
+    }
+    else if (note1 == 4)
+    {
+        note = note + 14;
+        note = note + note2;
+        note5(note);
+    }
+}
+
+void note1(int note)
+{
+    sendNoteOff (0, lastNote1, 80);
+    sendNoteOn (0, note, 80);
+    lastNote1 = note;
+}
+void note2(int note)
+{
+    sendNoteOff (0, lastNote2, 80);
+    sendNoteOn (0, note, 80);
+    lastNote2 = note;
+}
+void note3(int note)
+{
+    sendNoteOff (0, lastNote3, 80);
+    sendNoteOn (0, note, 80);
+    lastNote3 = note;
+}
+void note4(int note)
+{
+    sendNoteOff (0, lastNote4, 80);
+    sendNoteOn (0, note, 80);
+    lastNote4 = note;
+}
+void note5(int note)
+{
+    sendNoteOff (0, lastNote5, 80);
+    sendNoteOn (0, note, 80);
+    lastNote5 = note;
+}
+
+void handleButtonDown (int index)
+{
+    initialise();
+}
+
+void repaint()
+{
+  clearDisplay();
+
+        //Draw 5 Blobs
+        paintBlob(blob1x, blob1y, blob1d);
+        paintBlob(blob2x, blob2y, blob2d);
+        paintBlob(blob3x, blob3y, blob3d);
+        paintBlob(blob4x, blob4y, blob4d);
+        paintBlob(blob5x, blob5y, blob5d);
+
+        //Draw 5 Bullets
+        drawBullet(bullet1x, bullet1y, blob1d);
+        drawBullet(bullet2x, bullet2y, blob2d);
+        drawBullet(bullet3x, bullet3y, blob3d);
+        drawBullet(bullet4x, bullet4y, blob4d);
+        drawBullet(bullet5x, bullet5y, blob5d);
+
+        //Update Bullet
+        updateBullet1();
+        updateBullet2();
+        updateBullet3();
+        updateBullet4();
+        updateBullet5();
+
+        //Detect Collision
+        detectBullet();
+}
+
+/*
+<display backgroundColour="0xFFED4CDBAE" textColour="0xFFFFFFFF">
+    <pixels>
+        <pixel index="91" colour="FF00AA00" />
+        <pixel index="92" colour="FF00FF00" />
+        <pixel index="93" colour="FF00AA00" />
+        <pixel index="107" colour="FF00FF00" />
+        <pixel index="167" colour="FFAAAAAA" />
+        <pixel index="182" colour="FFFFFFFF" />
+
+        <pixel index="172" colour="FF0000AA" />
+        <pixel index="173" colour="FF0000FF" />
+        <pixel index="174" colour="FF0000AA" />
+        <pixel index="158" colour="FF0000FF" />
+        <pixel index="128" colour="FFAAAAAA" />
+        <pixel index="113" colour="FFFFFFFF" />
+
+        <pixel index="42" colour="FFAAAA00" />
+        <pixel index="57" colour="FFFFFF00" />
+        <pixel index="56" colour="FFFFFF00" />
+        <pixel index="72" colour="FFAAAA00" />
+        <pixel index="48" colour="FFAAAAAA" />
+        <pixel index="47" colour="FFFFFFFF" />
+
+    </pixels>
+</display>
+*/

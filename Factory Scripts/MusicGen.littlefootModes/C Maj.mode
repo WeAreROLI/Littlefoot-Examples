@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode name="C Maj">
+  <variable name="speed" value="1"/>
+  <variable name="rootNote" value="C1"/>
+  <variable name="chord" value="Major"/>
+</mode>

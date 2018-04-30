@@ -1,0 +1,382 @@
+/*
+<metadata description="BLOCKSvaders - What's your highest score?!" details="Touch to move the player and lift to fire. The more enemies you hit, the faster and harder it gets." target="Lightpad" tags="Game"  canEmbedModes="false" />
+*/
+
+int gameState_Over;
+int gameState_Play;
+int gameState_Prepare;
+int gameState;
+
+int score;
+int highScore;
+
+float playerX;
+float playerY;
+float targetPlayerX;
+float playerSpeedX;
+
+float enemyX;
+float enemyY;
+float enemySpeedY;
+
+float enemySpeedIncreasePerKill;
+
+float bulletX;
+float bulletY;
+float bulletSpeedY;
+
+float explosionX;
+float explosionY;
+float explosionWidth;
+float explosionGrowPerFrame;
+float explosionMax;
+
+int gameOverMsec;
+int gameStartMsec;
+
+int msecPerCountdownTick;
+int numCountdownTicks;
+
+int randomSeed;
+
+///////////////////////////
+// Initialisation
+
+void initialise()
+{
+    // game state enum
+    gameState_Over    = 0;
+    gameState_Prepare = 1;
+    gameState_Play    = 2;
+
+    gameState = gameState_Over;
+
+    enemySpeedIncreasePerKill = 0.03;
+
+    bulletSpeedY = 0.5;
+
+    highScore = 0;
+
+    explosionGrowPerFrame = 0.6;
+    explosionMax = 5.0;
+
+    gameOverMsec = -9999;
+
+    msecPerCountdownTick = 500;
+    numCountdownTicks = 3;
+    
+	for (int i = 0; i < 32; ++i)
+        setLocalConfigActiveState (i, false, false);
+}
+
+///////////////////////////
+// Utilities
+
+float getRandom01()
+{
+    while(true)
+    {
+        randomSeed = 214013 * randomSeed + 2531011;
+        int rndInt = (randomSeed >> 16) & 0x7fff;
+        float f01 = float(rndInt) / 32768.0;
+        if (f01 >= 0.0 && f01 < 1.0)
+            return f01;
+    }
+    return 0.0;
+}
+
+float getRandomInRange(float start, float rangeExclusive)
+{
+    float rnd = getRandom01();
+    return start + (rangeExclusive - 0.0001) * rnd;
+}
+
+///////////////////////////
+// Game Logic
+
+void startGame()
+{
+    randomSeed = getMillisecondCounter();
+
+    gameState = gameState_Play;
+
+    playerX = 8.0;
+    playerY = 12.0;
+    targetPlayerX = 8.0;
+    playerSpeedX = 0.3;
+
+    enemySpeedY = 0.1;
+
+    bulletX = -99.0;
+    score = 0;
+
+    explosionX = -1.0;
+    explosionY = -1.0;
+    explosionWidth = 0.0;
+
+    spawnEnemy();
+}
+
+void setPlayerTarget02(float x02)
+{
+    targetPlayerX = float(x02) / 2.0 * 15.0;
+}
+
+void spawnEnemy()
+{
+    enemyY = 0.0;
+    enemyX = getRandomInRange(1.0, 13.0);
+}
+
+void spawnBullet()
+{
+    bulletX = playerX;
+    bulletY = playerY - 1.0;
+}
+
+void updatePlayer()
+{
+    playerX = playerX + (targetPlayerX - playerX) * playerSpeedX;
+}
+
+void updateEnemy()
+{
+    enemyY += enemySpeedY;
+}
+
+void updateBullet()
+{
+    bulletY -= bulletSpeedY;
+    if (bulletY < 0)
+        bulletX = -1;
+}
+
+void updateExplosion()
+{
+    if (explosionX >= 0.0)
+    {
+        explosionWidth += explosionGrowPerFrame;
+        if (explosionWidth > explosionMax)
+        {
+            explosionX = -1.0;
+        }
+    }
+}
+
+void destroyEnemy()
+{
+    bulletX = -99.0;
+    bulletY = -1;
+    explosionX = enemyX;
+    explosionY = enemyY;
+    explosionWidth = 1.0;
+
+    enemySpeedY += enemySpeedIncreasePerKill;
+    score++;
+}
+
+void detectCollisions()
+{
+    if (bulletX >= 0)
+    {
+        int ydist = abs(int(bulletY)- int(enemyY));
+        if (ydist < 3)
+        {
+            int dist = abs(int(bulletX) - int(enemyX));
+            if (dist < 3)
+            {
+                destroyEnemy();
+                spawnEnemy();
+            }
+        }
+    }
+}
+
+void detectGameOver()
+{
+    if (enemyY > 13)
+    {
+        gameState = gameState_Over;
+        if (score > highScore)
+        {
+            highScore = score;
+            gameOverMsec = getMillisecondCounter();
+        }
+    }
+}
+
+void updatePrepare()
+{
+    int msecSinceStart = getMillisecondCounter() - gameStartMsec;
+    if (msecSinceStart > numCountdownTicks * msecPerCountdownTick)
+    {
+        startGame();
+    }
+}
+
+void updateGame()
+{
+    updatePlayer();
+    updateEnemy();
+    updateBullet();
+    updateExplosion();
+
+    detectCollisions();
+    detectGameOver();
+}
+
+///////////////////////////
+// Input detection
+
+void touchStart(int index, float touchX02, float touchY, float touchZ, float touchScale)
+{
+    if (gameState == gameState_Over)
+    {
+        if (getMillisecondCounter() - gameOverMsec > 1000)
+        {
+            gameStartMsec = getMillisecondCounter();
+            gameState = gameState_Prepare;
+        }
+    }
+    else if (gameState == gameState_Play)
+    {
+        setPlayerTarget02(touchX02);
+    }
+}
+
+void touchMove(int index, float touchX02, float touchY, float touchZ, float touchScale)
+{
+    setPlayerTarget02(touchX02);
+}
+
+void touchEnd(int index, float touchX02, float touchY, float touchZ, float touchScale)
+{
+    if (gameState == gameState_Play)
+    {
+        spawnBullet();
+    }
+}
+
+///////////////////////////
+// Drawing
+
+void drawBullet()
+{
+    if (bulletX >= 0.0)
+        fillRect(0xffffffff, int(bulletX) - 1, int(bulletY), 3, 3);
+}
+
+void drawPlayer()
+{
+    int col = 0xff0000ff;
+    int px = int(playerX);
+    int py = int(playerY);
+    fillPixel (col, px + 0, py + 0);
+    fillPixel (col, px - 1, py + 1);
+    fillPixel (col, px + 0, py + 1);
+    fillPixel (col, px + 1, py + 1);
+    fillPixel (col, px - 1, py + 2);
+    fillPixel (col, px + 1, py + 2);
+}
+
+void drawEnemy()
+{
+    int col = 0xffff0000;
+    int px = int(enemyX);
+    int py = int(enemyY);
+    fillPixel (col, px + 0, py + 2);
+    fillPixel (col, px - 1, py + 1);
+    fillPixel (col, px + 0, py + 1);
+    fillPixel (col, px + 1, py + 1);
+    fillPixel (col, px - 1, py + 0);
+    fillPixel (col, px + 1, py + 0);
+}
+
+void drawExplosion()
+{
+    if (explosionX >= 0.0)
+    {
+        blendRect(0x80ffffff, int(explosionX + explosionWidth) + 1, int(explosionY), 2, 1);
+        blendRect(0x80ffffff, int(explosionX - explosionWidth) - 1, int(explosionY), 2, 1);
+    }
+}
+
+void repaintPlay()
+{
+    blendRect(0x30000000, 0, 0, 15, 15);
+    drawPlayer();
+    drawEnemy();
+    drawBullet();
+    drawExplosion();
+}
+
+void repaintGameOver()
+{
+    fillRect(0xff00ff00, 0, 0, 15, 15);
+    fillRect(0xff000000, 1, 1, 13, 13);
+    drawNumber(score, 0xffffffff, 2, 2);
+    drawNumber(highScore, 0xffffffff, 2, 8);
+}
+
+void repaintPrepare()
+{
+    fillRect(0xff000000, 0, 0, 15, 15);
+    int msecSinceStart = getMillisecondCounter() - gameStartMsec;
+    int counterDigit = (numCountdownTicks * msecPerCountdownTick - msecSinceStart) / msecPerCountdownTick + 1;
+    drawNumber(counterDigit, 0xffffffff, 5, 5);
+}
+
+void repaint()
+{
+    if (gameState == gameState_Play)
+    {
+        updateGame();
+        repaintPlay();
+    }
+    else if (gameState == gameState_Prepare)
+    {
+        repaintPrepare();
+        updatePrepare();
+    }
+    else
+    {
+        repaintGameOver();
+    }
+}
+
+/*
+<display backgroundColour="0xFF2381A1" textColour="0xFFFFFFFF">
+    <pixels>
+        <pixel index="6" colour="FF6ABFD9" />
+        <pixel index="9" colour="FF6ABFD9" />
+        <pixel index="21" colour="FF6ABFD9" />
+        <pixel index="22" colour="776ABFD9" />
+        <pixel index="23" colour="776ABFD9" />
+        <pixel index="24" colour="FF6ABFD9" />
+        <pixel index="36" colour="776ABFD9" />
+        <pixel index="37" colour="FF6ABFD9" />
+        <pixel index="38" colour="FF6ABFD9" />
+        <pixel index="39" colour="776ABFD9" />
+        <pixel index="52" colour="FF6ABFD9" />
+        <pixel index="53" colour="FF6ABFD9" />
+        <pixel index="82" colour="7AA4E6E8" />
+        <pixel index="83" colour="7AA4E6E8" />
+        <pixel index="97" colour="FFA4E6E8" />
+        <pixel index="98" colour="FFA4E6E8" />
+        <pixel index="112" colour="FFA4E6E8" />
+        <pixel index="113" colour="FFA4E6E8" />
+        <pixel index="156" colour="FFE2C84F" />
+        <pixel index="157" colour="FFE2C84F" />
+        <pixel index="170" colour="40E2C84F" />
+        <pixel index="171" colour="FFE2C84F" />
+        <pixel index="172" colour="FFE2C84F" />
+        <pixel index="173" colour="40E2C84F" />
+        <pixel index="185" colour="FFE2C84F" />
+        <pixel index="186" colour="40E2C84F" />
+        <pixel index="187" colour="40E2C84F" />
+        <pixel index="188" colour="FFE2C84F" />
+        <pixel index="200" colour="FFE2C84F" />
+        <pixel index="203" colour="FFE2C84F" />
+    </pixels>
+</display>
+*/

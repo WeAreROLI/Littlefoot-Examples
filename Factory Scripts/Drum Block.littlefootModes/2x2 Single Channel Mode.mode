@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode name="2x2 Single Channel Mode">
+  <variable name="midiMode" value="Single Channel"/>
+  <variable name="channelFirst" value="1"/>
+  <variable name="channelLast" value="1"/>
+  <variable name="baseNote" value="C1"/>
+  <variable name="gridSize" value="2"/>
+  <variable name="fixedStrikeOn" value="false"/>
+  <variable name="fixedStrikeValue" value="127"/>
+  <variable name="trackingMode" value="0"/>
+  <variable name="pressType" value="0"/>
+  <variable name="slideCc" value="74"/>
+  <variable name="slideCoef" value="0"/>
+  <variable name="padColour1" value="0x4F86F5"/>
+  <variable name="padColour2" value="0xC99CF6"/>
+  <variable name="padColour3" value="0xE667DC"/>
+  <variable name="padColour4" value="0xE667DC"/>
+  <variable name="padColour5" value="0x4F86F5"/>
+  <variable name="padColour6" value="0xC99CF6"/>
+  <variable name="padColour7" value="0xF7AC76"/>
+  <variable name="padColour8" value="0xF7AC76"/>
+  <variable name="padColour9" value="0xFC4276"/>
+  <variable name="padColour10" value="0xFC4276"/>
+  <variable name="padColour11" value="0xC38FF8"/>
+  <variable name="padColour12" value="0xC38FF8"/>
+  <variable name="padColour13" value="0xF7AC76"/>
+  <variable name="padColour14" value="0xF7AC76"/>
+  <variable name="padColour15" value="0xFC4276"/>
+  <variable name="padColour16" value="0xE667DC"/>
+</mode>

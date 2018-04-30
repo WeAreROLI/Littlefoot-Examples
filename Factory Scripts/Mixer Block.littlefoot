@@ -1,0 +1,369 @@
+/*
+<metadata description="Mix tracks with your Lightpad Block." details="Mixer Block has four faders and four buttons. Each button and fader can send a different MIDI CC value. Set the behaviour of each button, such as if it is a toggle or a trigger. You can also set the colour of each fader and button too."
+          target="Lightpad" 
+          tags="MIDI;Controller;Mixing;">
+	<groups>
+        <group name="channel" displayName="Channel *" count="4" />
+	</groups>
+	<variables>
+        <variable name="midiChannel" displayName="MIDI Channel" type="int" min="1" max="16" value="1" displayMode="stepper" tooltip="The MIDI channel that values are sent on" />
+        <variable name="sliderColour" displayName="Fader colour" type="colour" value="0x5082f1" tooltip="The colour of the faders"/>
+        <variable name="buttonColour" displayName="Button colour" type="colour" value="0xe84ab8" tooltip="The colour of the buttons"/>
+        <vector count="4" group="channel" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="slider" type="int" min="0" max="11" value="0" visible="false" internal="true"/>
+            <variable name="button" displayName="Value" type="int" min="0" max="255" value="0" visible="false" internal="true" />
+            <variable name="behaviour" displayName="Behaviour" type="option" displayMode="multiline" value="Toggle" options="Toggle;Gate;Trigger" tooltip="The behaviour of the button.&#13;Toggle will invert each time you press the button&#13;Gate will send high when you press and then low when you release&#13;Trigger will send high and the low a short period later"/>
+            <variable name="buttonCC" displayName="Button CC" type="int" min="0" max="127" value="0" initStart="102" tooltip="The MIDI CC value that is sent by the button" />
+            <variable name="sliderCC" displayName="Fader CC" type="int" min="0" max="127" value="0" initStart="112" tooltip="The MIDI CC value that is sent by the fader" />
+			<variable name="sliderMin" displayName="Minimum" type="int" min="0" max="127" value="0" visible="true" tooltip="The minimum MIDI CC value sent by the fader" />
+			<variable name="sliderMax" displayName="Maximum" type="int" min="0" max="127" value="127" visible="true" tooltip="The maximum MIDI CC value sent by the fader" />
+        </vector>
+        <vector count="16" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="touchType" type="int" min="0" max="127" value="0" visible="false" internal="true" />
+        </vector>
+	</variables>
+</metadata>
+*/
+
+// PC Note - We arent using the heap. Without this statement we end up using too much of the heap...
+#heapsize: 1
+
+const int touchTypeNone   = 0;
+const int touchTypeSlider = 1;
+const int touchTypeButton = 2;
+
+//==============================================================================
+void initialise()
+{
+	for (int i = 0; i < 4; ++i)
+        setSlider (i, 1);
+
+    for (int i = 0; i < 32; ++i)
+        setLocalConfigActiveState (i, false, false);
+}
+
+//==============================================================================
+int channelIndexForX (float x)
+{
+    float x01 = x * 0.5;
+
+    // Each slider has an area of 3px + 1px gap. We want the gaps to be dead zones..
+	int ledZone = int (x01 * 15);
+
+	if (ledZone <= 3) return 0;
+	if (ledZone >= 4 && ledZone <= 7) return 1;
+	if (ledZone >= 8 && ledZone <= 11) return 2;
+	return 3;
+}
+
+//==============================================================================
+float getSliderValue01ForTouchAtY (float y)
+{
+    float sliderMax   = 14.0;
+    float sliderMin   = 4.0;
+    float sliderRange = sliderMax - sliderMin;
+
+    float closestLED  = clamp (sliderMin, sliderMax, float (y * 14));
+    float value01     = ((closestLED - sliderMin) / sliderRange);
+    return 1.0 - value01;
+}
+
+//==============================================================================
+int convertSliderValue01ToRange (float slider01, int sliderMin, int sliderMax, int hardMax)
+{
+    return clamp (0x00, hardMax, sliderMin + int (slider01 * float (sliderMax - sliderMin)));
+}
+
+//==============================================================================
+int convertSliderValue01ToOutputRange (int sliderIndex, float slider01)
+{
+    return convertSliderValue01ToRange (slider01, getSliderMin (sliderIndex), getSliderMax (sliderIndex), 0x7F);
+}
+
+//==============================================================================
+void doTouchSlider (int index, float x, float y, float z, float vz)
+{
+ 	int sliderIndex  = channelIndexForX (x);
+    int currentValue = getSlider (sliderIndex);
+    float slider01   = getSliderValue01ForTouchAtY (y * 0.5);
+    int midiValue    = convertSliderValue01ToOutputRange (sliderIndex, slider01);
+    int newValue     = convertSliderValue01ToRange (slider01, 1, 11, 11);
+
+    setSlider (sliderIndex, newValue);
+    sendMIDI (0xB0 | (midiChannel - 1), getSliderCC (sliderIndex), midiValue);
+}
+
+//==============================================================================
+void doTouchButtonDown (int in, float x, float y, float z, float vz)
+{
+    int buttonIndex = channelIndexForX (x);
+    int buttonCC    = getButtonCC (buttonIndex);
+    int behaviour   = getBehaviour (buttonIndex);
+
+    if (behaviour == 0)			// Toggle
+    {
+        setButton (buttonIndex, 255 - getButton (buttonIndex));
+        sendCC (midiChannel - 1, buttonCC, getButton (buttonIndex) / 2);
+    }
+    else if (behaviour == 1)	// Gate
+    {
+        setButton (buttonIndex, 255);
+        sendCC (midiChannel - 1, buttonCC, 0x7F);
+    }
+    else if (behaviour == 2)	// trigger
+    {
+        setButton (buttonIndex, 255);
+        sendCC (midiChannel - 1, buttonCC, 0x7F);
+    }
+}
+
+//==============================================================================
+void doTouchButtonUp (int index, float x, float y, float z, float vz)
+{
+    int buttonIndex = channelIndexForX (x);
+    if (getBehaviour (buttonIndex) == 1)
+	{
+		setButton (buttonIndex, 0);
+		sendCC (midiChannel - 1, getButtonCC (buttonIndex), 0x00);
+	}
+}
+
+//==============================================================================
+bool isTouchingButton (float y)
+{
+    return (int (y * 0.5 * 15.0) <= 2);
+}
+
+//==============================================================================
+bool isValidTouchIndex (int index)
+{
+    return ((index - 1) < 16);
+}
+
+//==============================================================================
+void touchStart (int index, float x, float y, float z, float vz)
+{
+    if (! isValidTouchIndex (index))
+    {
+        return;
+    }
+
+    if (isTouchingButton (y))
+    {
+        doTouchButtonDown (index, x, y, z, vz);
+        setTouchType ((index - 1), touchTypeButton);
+    }
+    else
+    {
+        doTouchSlider (index, x, y, z, vz);
+        setTouchType ((index - 1), touchTypeSlider);
+    }
+}
+
+//==============================================================================
+void touchMove (int index, float x, float y, float z, float vz)
+{
+    if (! isValidTouchIndex (index))
+    {
+        return;
+    }
+
+    if (! isTouchingButton (y))
+    {
+        doTouchSlider (index, x, y, z, vz);
+    }
+}
+
+//==============================================================================
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+    if (! isValidTouchIndex (index))
+    {
+        return;
+    }
+
+    int touchType = getTouchType ((index - 1));
+    if (touchType == touchTypeButton)
+    {
+        doTouchButtonUp (index, x, y, z, vz);
+    }
+    else
+    {
+        doTouchSlider (index, x, y, z, vz);
+    }
+
+    setTouchType ((index - 1), touchTypeNone);
+}
+
+//==============================================================================
+void repaint()
+{
+    fillRect (0x000000, 0, 0, 15, 15);
+
+    for (int channel = 0; channel < 4; ++channel)
+	{
+	    int buttonValue = getButton (channel);
+	    int behaviour   = getBehaviour (channel);
+
+	    if (buttonValue > 0)
+        {
+            if (behaviour == 2)
+            {
+                buttonValue -= 31;
+                if (buttonValue < 0)
+                {
+                    buttonValue = 0;
+                }
+                setButton (channel, buttonValue);
+                sendCC (midiChannel - 1, getButtonCC (channel), buttonValue / 2);
+                blendRect (makeARGB (buttonValue, (buttonColour >> 16) & 0xFF, (buttonColour >> 8) & 0xFF, (buttonColour) & 0xFF), channel * 4, 0, 3, 3);
+            }
+            else
+            {
+                fillRect (buttonColour, channel * 4, 0, 3, 3);
+            }
+        }
+
+ 		int sliderValue  = getSlider (channel);
+		fillRect (sliderColour, channel * 4,  15 - sliderValue, 3, sliderValue);
+	}
+}
+
+/*
+<display backgroundColour="0xFF83DD79" textColour="0xFF000000">
+    <pixels>
+        <pixel index="0" colour="FF00FFFF" />
+        <pixel index="1" colour="FF00FFFF" />
+        <pixel index="2" colour="FF00FFFF" />
+        <pixel index="4" colour="FF00FFFF" />
+        <pixel index="5" colour="FF00FFFF" />
+        <pixel index="6" colour="FF00FFFF" />
+        <pixel index="8" colour="FF00FFFF" />
+        <pixel index="9" colour="FF00FFFF" />
+        <pixel index="10" colour="FF00FFFF" />
+        <pixel index="12" colour="FF00FFFF" />
+        <pixel index="13" colour="FF00FFFF" />
+        <pixel index="14" colour="FF00FFFF" />
+        <pixel index="15" colour="FF00FFFF" />
+        <pixel index="16" colour="FF00FFFF" />
+        <pixel index="17" colour="FF00FFFF" />
+        <pixel index="19" colour="FF00FFFF" />
+        <pixel index="20" colour="FF00FFFF" />
+        <pixel index="21" colour="FF00FFFF" />
+        <pixel index="23" colour="FF00FFFF" />
+        <pixel index="24" colour="FF00FFFF" />
+        <pixel index="25" colour="FF00FFFF" />
+        <pixel index="27" colour="FF00FFFF" />
+        <pixel index="28" colour="FF00FFFF" />
+        <pixel index="29" colour="FF00FFFF" />
+        <pixel index="30" colour="FF00FFFF" />
+        <pixel index="31" colour="FF00FFFF" />
+        <pixel index="32" colour="FF00FFFF" />
+        <pixel index="34" colour="FF00FFFF" />
+        <pixel index="35" colour="FF00FFFF" />
+        <pixel index="36" colour="FF00FFFF" />
+        <pixel index="38" colour="FF00FFFF" />
+        <pixel index="39" colour="FF00FFFF" />
+        <pixel index="40" colour="FF00FFFF" />
+        <pixel index="42" colour="FF00FFFF" />
+        <pixel index="43" colour="FF00FFFF" />
+        <pixel index="44" colour="FF00FFFF" />
+        <pixel index="45" colour="FF00FFFF" />
+        <pixel index="46" colour="FF00FFFF" />
+        <pixel index="47" colour="FF00FFFF" />
+        <pixel index="49" colour="FF00FFFF" />
+        <pixel index="50" colour="FF00FFFF" />
+        <pixel index="51" colour="FF00FFFF" />
+        <pixel index="53" colour="FF00FFFF" />
+        <pixel index="54" colour="FF00FFFF" />
+        <pixel index="55" colour="FF00FFFF" />
+        <pixel index="57" colour="FF00FFFF" />
+        <pixel index="58" colour="FF00FFFF" />
+        <pixel index="59" colour="FF00FFFF" />
+        <pixel index="60" colour="FF00FFFF" />
+        <pixel index="61" colour="FF00FFFF" />
+        <pixel index="62" colour="FF00FFFF" />
+        <pixel index="64" colour="FF00FFFF" />
+        <pixel index="65" colour="FF00FFFF" />
+        <pixel index="66" colour="FF00FFFF" />
+        <pixel index="68" colour="FF00FFFF" />
+        <pixel index="69" colour="FF00FFFF" />
+        <pixel index="70" colour="FF00FFFF" />
+        <pixel index="72" colour="FF00FFFF" />
+        <pixel index="73" colour="FF00FFFF" />
+        <pixel index="74" colour="FF00FFFF" />
+        <pixel index="75" colour="FF00FFFF" />
+        <pixel index="76" colour="FF00FFFF" />
+        <pixel index="77" colour="FF00FFFF" />
+        <pixel index="79" colour="FF00FFFF" />
+        <pixel index="80" colour="FF00FFFF" />
+        <pixel index="81" colour="FF00FFFF" />
+        <pixel index="83" colour="FF00FFFF" />
+        <pixel index="84" colour="FF00FFFF" />
+        <pixel index="85" colour="FF00FFFF" />
+        <pixel index="90" colour="FF00FFFF" />
+        <pixel index="91" colour="FF00FFFF" />
+        <pixel index="92" colour="FF00FFFF" />
+        <pixel index="94" colour="FF00FFFF" />
+        <pixel index="95" colour="FF00FFFF" />
+        <pixel index="96" colour="FF00FFFF" />
+        <pixel index="98" colour="FF00FFFF" />
+        <pixel index="99" colour="FF00FFFF" />
+        <pixel index="100" colour="FF00FFFF" />
+        <pixel index="105" colour="FF00FFFF" />
+        <pixel index="106" colour="FF00FFFF" />
+        <pixel index="107" colour="FF00FFFF" />
+        <pixel index="113" colour="FF00FFFF" />
+        <pixel index="114" colour="FF00FFFF" />
+        <pixel index="115" colour="FF00FFFF" />
+        <pixel index="120" colour="FF00FFFF" />
+        <pixel index="121" colour="FF00FFFF" />
+        <pixel index="122" colour="FF00FFFF" />
+        <pixel index="128" colour="FF00FFFF" />
+        <pixel index="129" colour="FF00FFFF" />
+        <pixel index="130" colour="FF00FFFF" />
+        <pixel index="143" colour="FF00FFFF" />
+        <pixel index="144" colour="FF00FFFF" />
+        <pixel index="145" colour="FF00FFFF" />
+        <pixel index="158" colour="FF00FFFF" />
+        <pixel index="159" colour="FF00FFFF" />
+        <pixel index="160" colour="FF00FFFF" />
+        <pixel index="180" colour="FF4F62CB" />
+        <pixel index="181" colour="FF4F62CB" />
+        <pixel index="182" colour="FF4F62CB" />
+        <pixel index="184" colour="FF4F62CB" />
+        <pixel index="185" colour="FF4F62CB" />
+        <pixel index="186" colour="FF4F62CB" />
+        <pixel index="188" colour="FF4F62CB" />
+        <pixel index="189" colour="FF4F62CB" />
+        <pixel index="190" colour="FF4F62CB" />
+        <pixel index="192" colour="FF4F62CB" />
+        <pixel index="193" colour="FF4F62CB" />
+        <pixel index="194" colour="FF4F62CB" />
+        <pixel index="195" colour="FF4F62CB" />
+        <pixel index="196" colour="FF4F62CB" />
+        <pixel index="197" colour="FF4F62CB" />
+        <pixel index="199" colour="FF4F62CB" />
+        <pixel index="200" colour="FF4F62CB" />
+        <pixel index="201" colour="FF4F62CB" />
+        <pixel index="203" colour="FF4F62CB" />
+        <pixel index="204" colour="FF4F62CB" />
+        <pixel index="205" colour="FF4F62CB" />
+        <pixel index="207" colour="FF4F62CB" />
+        <pixel index="208" colour="FF4F62CB" />
+        <pixel index="209" colour="FF4F62CB" />
+        <pixel index="210" colour="FF4F62CB" />
+        <pixel index="211" colour="FF4F62CB" />
+        <pixel index="212" colour="FF4F62CB" />
+        <pixel index="214" colour="FF4F62CB" />
+        <pixel index="215" colour="FF4F62CB" />
+        <pixel index="216" colour="FF4F62CB" />
+        <pixel index="218" colour="FF4F62CB" />
+        <pixel index="219" colour="FF4F62CB" />
+        <pixel index="220" colour="FF4F62CB" />
+        <pixel index="222" colour="FF4F62CB" />
+        <pixel index="223" colour="FF4F62CB" />
+        <pixel index="224" colour="FF4F62CB" />
+    </pixels>
+</display>
+*/

@@ -1,0 +1,344 @@
+/*
+<metadata description="The classic game. Now on BLOCKS!" details="Play the classic game on your Lightpad Block where the paddle will track your finger position left to right." target="Lightpad" tags="Game" canEmbedModes="false" >
+    <variables>
+        <vector count="20" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="brick" displayName="Value" type="bool" value="true" visible="false" />
+            <variable name="brickCol" displayName="Value" type="colour" value="0xFF0000" visible="false" />
+        </vector>
+    </variables>
+</metadata>
+*/
+
+int paddlePos;
+int paddleWidth;
+bool down;
+int seed;
+int ballXVec;
+int ballYVec;
+int ballX;
+int ballY;
+int advanceCount;
+
+bool gameIsOver;
+bool gameIsPaused;
+int gameOverCoverIndex;
+int gameOverCoverCount;
+int gameStartMsec;
+
+#heapsize: 1
+
+void resetState()
+{
+    gameIsPaused = true;
+    gameIsOver   = false;
+
+    paddleWidth  = 4;
+    paddlePos    = 7;
+    seed         = 5;
+
+    ballX = 7;
+    ballY = 10;
+    ballYVec = -1;
+    if (getRandomInt (255) > 127)
+    {
+        ballXVec = 1;
+    }
+    else
+    {
+        ballXVec = -1;
+    }
+
+    int seedColour = makeARGB (255, getRandomInt (255), getRandomInt (255), getRandomInt (255));
+    for (int i = 0; i < 20; ++i)
+    {
+        int r = (((seedColour >> 16) & 0xFF) + getRandomInt (255)) % 255;
+        int g = (((seedColour >> 8) & 0xFF) + getRandomInt (255)) % 255;
+        int b = (((seedColour) & 0xFF) + getRandomInt (255)) % 255;
+
+        seedColour = makeARGB (255, b, r, g);   // Yep, lets really mess things up
+        setBrickCol (i, seedColour);
+        setBrick (i, true);
+    }
+}
+
+void initialise()
+{
+    resetState();
+    startNewGame();
+	for (int i = 0; i < 32; ++i)
+        setLocalConfigActiveState (i, false, false);
+}
+
+void handleTouch (int index, float x, float y, float z, float vz)
+{
+    if (! gameIsOver)
+    {
+        paddlePos = int ((x * 0.5) * 15.0);
+        paddlePos = clamp (paddleWidth / 2, 15 - (paddleWidth / 2), paddlePos);
+    }
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+    handleTouch (index, x, y, z, vz);
+}
+
+void touchMove (int index, float x, float y, float z, float vz)
+{
+    handleTouch (index, x, y, z, vz);
+}
+
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+    handleTouch (index, x, y, z, vz);
+}
+
+int getBrickX (int brickIndex)
+{
+    return (brickIndex / 4) * 3;
+}
+
+int getBrickRight (int brickIndex)
+{
+    return getBrickX (brickIndex) + 3;
+}
+
+int getBrickY (int brickIndex)
+{
+    return (brickIndex % 4) * 2;
+}
+
+int getBrickBottom (int brickIndex)
+{
+    return getBrickY (brickIndex) + 2;
+}
+
+void handleButtonDown (int index)
+{
+    initialise();
+}
+
+void paintComponents()
+{
+    if (! gameIsPaused)
+    {
+        clearDisplay();
+        for (int i = 0; i < 20; ++i)
+        {
+            if (getBrick (i))
+            {
+                fillRect (getBrickCol (i), getBrickX (i), getBrickY (i), 3, 2);
+            }
+        }
+        fillRect (0xFF0000, paddlePos - (paddleWidth / 2), 14, paddleWidth, 1);
+        fillRect (0x00FF00, ballX, ballY, 1, 1);
+    }
+
+    if (! gameIsOver && gameIsPaused)
+    {
+        clearDisplay();
+        int msecSinceStart = getMillisecondCounter() - gameStartMsec;
+        int counterDigit = max (0, (3 * 500 - msecSinceStart) / 500 + 1);
+        if (counterDigit == 0)
+        {
+            resetState();
+            gameIsPaused = false;
+            gameIsOver   = false;
+        }
+        else
+        {
+            drawNumber(counterDigit, 0xffffffff, 5, 8);
+        }
+    }
+}
+
+void advance()
+{
+    if (gameIsPaused)
+    {
+        return;
+    }
+
+    if (++advanceCount % 2 != 0)
+    {
+        return;
+    }
+
+    ballY += ballYVec;
+    ballX += ballXVec;
+
+    if (ballX < 0)
+    {
+        ballX = 0;
+        ballXVec = -ballXVec;
+    }
+    else if (ballX > 14)
+    {
+        ballX = 14;
+        ballXVec = -ballXVec;
+    }
+
+    if (ballY < 0)
+    {
+        ballY = 0;
+        ballYVec = -ballYVec;
+    }
+    else if (ballY >= 14)
+    {
+        if (ballX >= paddlePos - (paddleWidth / 2) && ballX < paddlePos + (paddleWidth / 2))
+        {
+            ballYVec = -ballYVec;
+        }
+        else
+        {
+            triggerGameOver();
+            return;
+        }
+    }
+
+    bool hitOne = false;
+    for (int i = 19; i >= 0; --i)
+    {
+        if (! hitOne &&
+            getBrick (i) &&
+            ballY <= getBrickBottom (i) &&
+            ballX >= getBrickX (i) &&
+            ballX < getBrickRight (i))
+        {
+            ballYVec = 1;
+            setBrick (i, false);
+            paintComponents();
+            hitOne = true;
+        }
+    }
+
+    bool foundABrick = false;
+    for (int i = 0; i < 20; ++i)
+    {
+        if (getBrick (i))
+        {
+            foundABrick = true;
+            break;
+        }
+    }
+
+    if (! foundABrick)
+    {
+        triggerGameOver();
+    }
+}
+
+void triggerGameOver()
+{
+    gameIsOver         = true;
+    gameOverCoverIndex = 0;
+    gameOverCoverCount = 2;
+    gameIsPaused       = true;
+}
+
+void startNewGame()
+{
+    gameStartMsec = getMillisecondCounter();
+    gameIsOver    = false;
+}
+
+void showGameOver()
+{
+    fillRect (0x000000, 0, 0, 15, gameOverCoverIndex);
+    if (--gameOverCoverCount < 0)
+    {
+        gameOverCoverCount = 2;
+        if (++gameOverCoverIndex == 15)
+        {
+            gameOverCoverIndex = 15;
+            startNewGame();
+        }
+    }
+}
+
+void repaint()
+{
+    paintComponents();
+    if (! gameIsOver)
+        advance();
+    else
+        showGameOver();
+}
+
+/*
+<display backgroundColour="0xFFFE9031" textColour="0xFFFFFFFF">
+    <pixels>
+        <pixel index="5" colour="FFFF0000" />
+        <pixel index="6" colour="FFFF0000" />
+        <pixel index="7" colour="FFFF0000" />
+        <pixel index="8" colour="FFFF0000" />
+        <pixel index="84" colour="FF00FF00" />
+
+        <pixel index="195" colour="FFFFFF78" />
+        <pixel index="196" colour="FFFFFF78" />
+        <pixel index="197" colour="FFFFFF78" />
+        <pixel index="210" colour="FFFFFF78" />
+        <pixel index="211" colour="FFFFFF78" />
+        <pixel index="212" colour="FFFFFF78" />
+
+        <pixel index="198" colour="FF51E45C" />
+        <pixel index="199" colour="FF51E45C" />
+        <pixel index="200" colour="FF51E45C" />
+        <pixel index="213" colour="FF51E45C" />
+        <pixel index="214" colour="FF51E45C" />
+        <pixel index="215" colour="FF51E45C" />
+
+        <pixel index="201" colour="FF6721D8" />
+        <pixel index="202" colour="FF6721D8" />
+        <pixel index="203" colour="FF6721D8" />
+        <pixel index="216" colour="FF6721D8" />
+        <pixel index="217" colour="FF6721D8" />
+        <pixel index="218" colour="FF6721D8" />
+
+        <pixel index="204" colour="FFF24D4A" />
+        <pixel index="205" colour="FFF24D4A" />
+        <pixel index="206" colour="FFF24D4A" />
+        <pixel index="219" colour="FFF24D4A" />
+        <pixel index="220" colour="FFF24D4A" />
+        <pixel index="221" colour="FFF24D4A" />
+
+        <pixel index="207" colour="FF26C9A7" />
+        <pixel index="208" colour="FF26C9A7" />
+        <pixel index="209" colour="FF26C9A7" />
+        <pixel index="222" colour="FF26C9A7" />
+        <pixel index="223" colour="FF26C9A7" />
+        <pixel index="224" colour="FF26C9A7" />
+
+        <pixel index="165" colour="FFBE639F" />
+        <pixel index="166" colour="FFBE639F" />
+        <pixel index="167" colour="FFBE639F" />
+        <pixel index="180" colour="FFBE639F" />
+        <pixel index="181" colour="FFBE639F" />
+        <pixel index="182" colour="FFBE639F" />
+
+        <pixel index="174" colour="FF1C8FB8" />
+        <pixel index="175" colour="FF1C8FB8" />
+        <pixel index="176" colour="FF1C8FB8" />
+        <pixel index="189" colour="FF1C8FB8" />
+        <pixel index="190" colour="FF1C8FB8" />
+        <pixel index="191" colour="FF1C8FB8" />
+
+        <pixel index="177" colour="FF51E45C" />
+        <pixel index="178" colour="FF51E45C" />
+        <pixel index="179" colour="FF51E45C" />
+        <pixel index="192" colour="FF51E45C" />
+        <pixel index="193" colour="FF51E45C" />
+        <pixel index="194" colour="FF51E45C" />
+
+        <pixel index="144" colour="FFFFFF78" />
+        <pixel index="145" colour="FFFFFF78" />
+        <pixel index="146" colour="FFFFFF78" />
+        <pixel index="159" colour="FFFFFF78" />
+        <pixel index="160" colour="FFFFFF78" />
+        <pixel index="161" colour="FFFFFF78" />
+
+
+
+    </pixels>
+</display>
+*/
