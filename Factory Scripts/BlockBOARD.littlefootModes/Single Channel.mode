@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mode name="Single Channel">
+  <variable name="MIDI Start Channel" value="1"/>
+  <variable name="MIDI Mode" value="Single Channel"/>
+  <variable name="Pitch Bend Range" value="48"/>
+  <variable name="Octave" value="0"/>
+  <variable name="Transpose" value="0"/>
+  <variable name="Slide CC" value="74"/>
+  <variable name="Slide Mode" value="Absolute"/>
+  <variable name="Strike Sensitivity" value="103"/>
+  <variable name="Glide Sensitivity" value="103"/>
+  <variable name="Slide Sensitivity" value="127"/>
+  <variable name="Pressure Sensitivity" value="103"/>
+  <variable name="Lift Sensitivity" value="127"/>
+  <variable name="Fixed Velocity" value="false"/>
+  <variable name="Fixed Velocity Value" value="127"/>
+  <variable name="Piano Mode" value="false"/>
+  <variable name="Glide Rate" value="0"/>
+  <variable name="Glide Lock Enable" value="false"/>
+  <variable name="Mode" value="5"/>
+  <variable name="Scale" value="Major"/>
+  <variable name="Hide Mode" value="false"/>
+  <variable name="Chord" value="Off"/>
+  <variable name="Glide Tracking Mode" value="Last Played"/>
+  <variable name="Slide Tracking Mode" value="Last Played"/>
+  <variable name="Pressure Tracking Mode" value="Last Played"/>
+</mode>
